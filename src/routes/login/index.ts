@@ -1,10 +1,9 @@
-import { User } from "database/model";
+import { User } from "server/model";
 import type { Request } from "polka";
-import type { ServerResponse } from "http";
+import type { ServerResponse as Response } from "http";
 
-export async function post(req: Request, res: ServerResponse, next: () => void) {
-    console.log(JSON.stringify(req.body));
 
+export async function post(req: Request, res: Response) {
     const { username, password } = req.body;
     const users = await User.findAll({
         where: {

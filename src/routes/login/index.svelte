@@ -1,91 +1,63 @@
 <script lang="ts">
-    import { writable } from "svelte/store";
     import { goto } from "@sapper/app";
+    import { writable } from "svelte/store";
     import md5 from "md5";
-    import {
-        Container,
-        Form,
-        FormGroup,
-        Input,
-        Label,
-        Button,
-        Toast,
-        ToastHeader,
-    } from "sveltestrap";
 
-    const user: any = writable({
+    const input: any = writable({
         username: "",
         password: "",
     });
 
-    const invalid = {
+    const error = {
         username: false,
         password: false,
     };
 
-    let failedToast = false;
+    function login() {
+        const username = (input.username || "").trim();
+        const password = input.password || "";
 
-    function submit() {
-        const { username, password } = user;
-        invalid.username = username === "";
-        invalid.password = password === "";
+        error.username = input.username === "";
+        error.password = input.password === "";
 
-        if (invalid.username || invalid.password) {
+        if (Object.values(error).includes(true)) {
             return;
         }
 
         fetch("/login", {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                username: username.trim(),
+                username: username,
                 password: md5(password),
             }),
         }).then((res) => {
-            if (res.ok) {
-                goto("/dashboard");
-            } else {
-                failedToast = true;
+            if (res.status == 200) {
+                goto("/dashboard")
             }
         });
     }
 </script>
 
-<Container class="w-25 h-auto align-middle my-auto">
-    <h3 class="text-center">Login</h3>
-    <Form>
-        <FormGroup>
-            <Label for="username">Username</Label>
-            <Input
-                type="text"
-                id="username"
-                placeholder="Username"
-                bind:invalid={invalid.username}
-                bind:value={user.username}
-            />
-        </FormGroup>
-        <FormGroup>
-            <Label for="password">Password</Label>
-            <Input
-                type="password"
-                id="password"
-                placeholder="Password"
-                bind:invalid={invalid.password}
-                bind:value={user.password}
-            />
-        </FormGroup>
-        <Button class="float-right" type="button" on:click={submit}
-            >Login</Button
-        >
-    </Form>
-
-    {#if failedToast}
-        <div class="bg-danger">
-            <Toast class="mr-1" danger>
-                <ToastHeader>Failed</ToastHeader>
-            </Toast>
-        </div>
-    {/if}
-</Container>
+<div class="flex flex-auto items-center justify-center">
+    <form class="space-y-2 p-10 bg-gray-300 rounded-lg">
+        <div class="text-center text-xl font-bold">Login</div>
+        <input
+            class="bg-white border-2 block w-full py-2 px-4 rounded-lg focus:outline-none focus:border-gray-700"
+            class:border-red-500={error.username}
+            bind:value={input.username}
+            placeholder="Username" />
+        <input
+            class="bg-white border-2 block w-full py-2 px-4 rounded-lg focus:outline-none focus:border-gray-700"
+            class:border-red-500={error.password}
+            type="password"
+            bind:value={input.password}
+            placeholder="Password" />
+        <button
+            class="bg-gray-500 hover:bg-gray-600 float-right rounded-lg text-gray-50 py-2 px-4 font-bold focus:outline-none"
+            type="button"
+            on:click={login}>
+            Login
+        </button>
+    </form>
+</div>

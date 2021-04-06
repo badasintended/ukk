@@ -1,12 +1,6 @@
 <script lang="ts">
-    import Navbar from "../../components/Navbar.svelte";
-    import Nav from "./../../components/Nav.svelte";
-    import {Container} from "sveltestrap";
+    import Sidebar from "client/components/Sidebar.svelte";
 </script>
 
-<Navbar />
-<Nav />
-
-<Container class="w-50 h-auto align-middle">
-    
-</Container>
+<Sidebar/>
+<div>aaa</div>
