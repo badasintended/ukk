@@ -2,4 +2,4 @@
     import Base from "client/components/Base.svelte";
 </script>
 
-<Base pageName="Customer">aaa</Base>
+<Base pageName="Transaction">aaa</Base>

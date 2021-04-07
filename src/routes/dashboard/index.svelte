@@ -1,6 +1,13 @@
 <script lang="ts">
-    import Sidebar from "client/components/Sidebar.svelte";
+    import Base from "client/components/Base.svelte";
 </script>
 
-<Sidebar/>
-<div>aaa</div>
+<Base pageName="Dashboard">
+    <table class="table-auto">
+        <thead>
+            <tr>
+                <th>Id</th>
+            </tr>
+        </thead>
+    </table>
+</Base>
