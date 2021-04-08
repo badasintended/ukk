@@ -1,13 +1,10 @@
 <script lang="ts">
-    import Base from "client/components/Base.svelte";
+    import Base from "client/component/Base.svelte";
+    import Cookies from "js-cookie";
+    import { onMount } from "svelte";
+    import { goto } from "@sapper/app";
 </script>
 
 <Base pageName="Dashboard">
-    <table class="table-auto">
-        <thead>
-            <tr>
-                <th>Id</th>
-            </tr>
-        </thead>
-    </table>
+    
 </Base>

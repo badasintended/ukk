@@ -9,16 +9,16 @@
     import Cookies from "js-cookie";
     import { onMount } from "svelte";
 
-    let customers = [];
-    let filteredCustomers = [];
+    let items = [];
+    let filteredItems = [];
     let filter = "";
 
     onMount(() => {
-        fetch("/customer/all", {
+        fetch("/item/all", {
             headers: { Authorization: Cookies.get("token") },
         }).then(async (res) => {
-            customers = await res.json();
-            filteredCustomers = customers;
+            items = await res.json();
+            filteredItems = items;
         });
     });
 
@@ -29,27 +29,29 @@
         id: 0,
         code: "",
         name: "",
-        address: "",
+        price: "",
     });
 
+    function formatPrice(price: number): string {
+        return ("" + price).replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1.");
+    }
+
     function updateFilter() {
-        filteredCustomers = customers.filter(
-            (v) => filter === "" || v.name.toLowerCase().includes(filter.toLowerCase())
-        );
+        filteredItems = items.filter((v) => filter === "" || v.name.toLowerCase().includes(filter.toLowerCase()));
     }
 
     function clear() {
         editor.id = -1;
         editor.code = "";
         editor.name = "";
-        editor.address = "";
+        editor.price = "";
     }
 
-    function set(customer) {
-        editor.id = customer.id;
-        editor.code = customer.code;
-        editor.name = customer.name;
-        editor.address = customer.address;
+    function set(item) {
+        editor.id = item.id;
+        editor.code = item.code;
+        editor.name = item.name;
+        editor.price = item.price;
     }
 
     function create() {
@@ -59,15 +61,15 @@
         showOverlay = true;
     }
 
-    function edit(customer) {
-        set(customer);
+    function edit(item) {
+        set(item);
 
         editMode = EditMode.EDIT;
         showOverlay = true;
     }
 
-    function del(customer) {
-        set(customer);
+    function del(item) {
+        set(item);
 
         editMode = EditMode.DELETE;
         showOverlay = true;
@@ -76,7 +78,7 @@
     function submit() {
         switch (editMode) {
             case EditMode.CREATE:
-                fetch("/customer/create", {
+                fetch("/item/create", {
                     method: "POST",
                     headers: {
                         Authorization: Cookies.get("token"),
@@ -84,12 +86,13 @@
                     },
                     body: JSON.stringify(editor),
                 }).then(async (res) => {
-                    const customer = await res.json();
-                    customers = [...customers, customer];
+                    const item = await res.json();
+                    items = [...items, item];
+                    updateFilter();
                 });
                 break;
             case EditMode.EDIT:
-                fetch("/customer/edit", {
+                fetch("/item/edit", {
                     method: "POST",
                     headers: {
                         Authorization: Cookies.get("token"),
@@ -97,16 +100,17 @@
                     },
                     body: JSON.stringify(editor),
                 }).then((res) => {
-                    const customer = customers.find((v) => v.id == editor.id);
-                    customer.code = editor.code;
-                    customer.name = editor.name;
-                    customer.address = editor.address;
+                    const item = items.find((v) => v.id == editor.id);
+                    item.code = editor.code;
+                    item.name = editor.name;
+                    item.price = +editor.price;
 
-                    customers = customers;
+                    items = items;
+                    updateFilter();
                 });
                 break;
             case EditMode.DELETE:
-                fetch("/customer/delete", {
+                fetch("/item/delete", {
                     method: "DELETE",
                     headers: {
                         Authorization: Cookies.get("token"),
@@ -114,7 +118,8 @@
                     },
                     body: JSON.stringify(editor),
                 }).then((res) => {
-                    customers = customers.filter((v) => v.id != editor.id);
+                    items = items.filter((v) => v.id != editor.id);
+                    updateFilter();
                 });
                 break;
         }
@@ -127,7 +132,7 @@
     }
 </script>
 
-<Base pageName="Customers">
+<Base pageName="Items">
     <div class="flex flex-col w-full">
         <!-- sticky header -->
         <div class="sticky top-0 pt-3 px-3 border-b-2 bg-gray-800 border-gray-900 text-gray-200">
@@ -155,38 +160,43 @@
             <!-- table header -->
             <div class="flex w-full mt-1 font-bold text-center">
                 <div class="w-20">Code</div>
-                <div class="w-1/4">Name</div>
-                <div class="flex-grow">Address</div>
+                <div class="flex-grow">Name</div>
+                <div class="w-1/5">Price</div>
                 <div class="w-20">Controls</div>
             </div>
         </div>
 
-        <!-- customer table -->
+        <!-- table -->
         <table class="table-fixed mx-3 mt-3 border-collapse">
             <tbody>
-                {#each filteredCustomers as customer, index}
+                {#each filteredItems as item, index}
                     <tr class="bg-gray-{index % 2 ? 400 : 300}">
-                        <td class="p-2 w-20 border-r-2 border-gray-200 text-center font-mono">{customer.code}</td>
-                        <td class="p-2 w-1/4 border-r-2 border-gray-200">{customer.name}</td>
-                        <td class="p-2 w-auto border-r-2 border-gray-200">{customer.address}</td>
+                        <td class="p-2 w-20 border-r-2 border-gray-200 text-center font-mono">{item.code}</td>
+                        <td class="p-2 w-auto border-r-2 border-gray-200">{item.name}</td>
+                        <td class="p-2 w-1/5 border-r-2 border-gray-200 text-right">
+                            <div class="flex">
+                                Rp
+                                <div class="flex-grow font-mono">{formatPrice(item.price)}</div>
+                            </div>
+                        </td>
                         <td class="p-2 w-20">
                             <div class="flex">
                                 <!-- edit button -->
                                 <button
                                     class="rounded-lg flex-grow grid place-items-center focus:outline-none transition-colors hover:text-blue-600"
-                                    on:click={() => edit(customer)}><SvgPencil /></button>
+                                    on:click={() => edit(item)}><SvgPencil /></button>
 
                                 <!-- delete button -->
                                 <button
                                     class="rounded-lg flex-grow grid place-items-center focus:outline-none transition-colors hover:text-red-600"
-                                    on:click={() => del(customer)}><SvgTrashCan /></button>
+                                    on:click={() => del(item)}><SvgTrashCan /></button>
                             </div>
                         </td>
                     </tr>
                 {/each}
 
                 <!-- footer -->
-                <tr class="bg-gray-{filteredCustomers.length % 2 ? 400 : 300}">
+                <tr class="bg-gray-{filteredItems.length % 2 ? 400 : 300}">
                     <td class="p-2 w-20 border-r-2 border-gray-200 text-center font-mono">
                         <div class="flex">
                             <button
@@ -194,13 +204,13 @@
                                 on:click={create}><SvgPlus /></button>
                         </div>
                     </td>
-                    <td class="p-2 w-1/4 border-r-2 border-gray-200">
+                    <td class="p-2 w-auto border-r-2 border-gray-200">
                         <div class="flex">
                             <button
                                 class="rounded-lg flex-grow grid place-items-center focus:outline-none transition-colors hover:text-green-700"
                                 on:click={create}><SvgPlus /></button>
                         </div></td>
-                    <td class="p-2 w-auto border-r-2 border-gray-200 text-right font-mono">
+                    <td class="p-2 w-1/5 border-r-2 border-gray-200 text-right font-mono">
                         <div class="flex">
                             <button
                                 class="rounded-lg flex-grow grid place-items-center focus:outline-none transition-colors hover:text-green-700"
@@ -256,11 +266,11 @@
                     class="bg-white border-2 mb-2 block w-full py-2 px-4 rounded-lg focus:outline-none focus:border-gray-900"
                     placeholder="Name"
                     bind:value={editor.name} />
-                <div class="text-xs pl-4 text-gray-800">Address</div>
+                <div class="text-xs pl-4 text-gray-800">Price</div>
                 <input
                     class="bg-white border-2 mb-2 block w-full py-2 px-4 rounded-lg focus:outline-none focus:border-gray-900"
-                    placeholder="Address"
-                    bind:value={editor.address} />
+                    placeholder="Price"
+                    bind:value={editor.price} />
                 <div class="flex justify-end space-x-2">
                     <button
                         class="bg-green-500 w-20 ml-2 hover:bg-green-600 float-right rounded-lg text-gray-50 py-2 px-4 font-bold focus:outline-none"

@@ -2,6 +2,7 @@
     import { goto } from "@sapper/app";
     import { writable } from "svelte/store";
     import md5 from "md5";
+    import Cookies from "js-cookie";
 
     const input: any = writable({
         username: "",
@@ -24,22 +25,27 @@
             return;
         }
 
-        fetch("/login", {
+        fetch("/session/login", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 username: username,
                 password: md5(password),
             }),
-        }).then((res) => {
+        }).then(async (res) => {
             if (res.status == 200) {
+                Cookies.set("token", await res.text());
                 goto("/dashboard")
             }
         });
     }
 </script>
 
-<div class="flex flex-auto items-center justify-center">
+<svelte:head>
+    <title>Login</title>
+</svelte:head>
+
+<div class="animate-load flex flex-auto items-center justify-center">
     <form class="space-y-2 p-10 bg-gray-300 rounded-lg">
         <div class="text-center text-xl font-bold">Login</div>
         <input
