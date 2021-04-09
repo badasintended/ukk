@@ -60,7 +60,7 @@
 
     function updateFilter() {
         filteredTransactions = transactions.filter(
-            (v) => filter === "" || v.name.toLowerCase().includes(filter.toLowerCase())
+            (v) => filter === "" || v.itemName.toLowerCase().includes(filter.toLowerCase())
         );
     }
 
@@ -358,7 +358,7 @@
                     class="bg-white border-2 mb-2 block w-full py-2 px-4 rounded-lg focus:outline-none focus:border-gray-900"
                     class:border-red-600={error.item}
                     bind:value={editor.itemId}
-                    on:input={onChange}>
+                    on:change={onChange}>
                     <option disabled selected value={-1}>--Select an item--</option>
                     {#each items as item}
                         <option value={item.id}>{item.name}</option>

@@ -32,6 +32,12 @@
         address: "",
     });
 
+    const error = {
+        code: false,
+        name: false,
+        address: false
+    }
+
     function updateFilter() {
         filteredCustomers = customers.filter(
             (v) => filter === "" || v.name.toLowerCase().includes(filter.toLowerCase())
@@ -74,6 +80,14 @@
     }
 
     function submit() {
+        error.code = editor.code.trim() === "";
+        error.name = editor.name.trim() === "";
+        error.address = editor.address.trim() === "";
+
+        if (Object.values(error).includes(true)) {
+            return;
+        }
+
         switch (editMode) {
             case EditMode.CREATE:
                 fetch("/customer/create", {
@@ -86,6 +100,7 @@
                 }).then(async (res) => {
                     const customer = await res.json();
                     customers = [...customers, customer];
+                    updateFilter();
                 });
                 break;
             case EditMode.EDIT:
@@ -103,6 +118,7 @@
                     customer.address = editor.address;
 
                     customers = customers;
+                    updateFilter();
                 });
                 break;
             case EditMode.DELETE:
@@ -115,6 +131,7 @@
                     body: JSON.stringify(editor),
                 }).then((res) => {
                     customers = customers.filter((v) => v.id != editor.id);
+                    updateFilter();
                 });
                 break;
         }
@@ -249,16 +266,19 @@
                 <div class="text-xs pl-4 text-gray-800">Code</div>
                 <input
                     class="bg-white border-2 mb-2 block w-full py-2 px-4 rounded-lg focus:outline-none focus:border-gray-900"
+                    class:border-red-600={error.code}
                     placeholder="Code"
                     bind:value={editor.code} />
                 <div class="text-xs pl-4 text-gray-800">Name</div>
                 <input
                     class="bg-white border-2 mb-2 block w-full py-2 px-4 rounded-lg focus:outline-none focus:border-gray-900"
+                    class:border-red-600={error.name}
                     placeholder="Name"
                     bind:value={editor.name} />
                 <div class="text-xs pl-4 text-gray-800">Address</div>
                 <input
                     class="bg-white border-2 mb-2 block w-full py-2 px-4 rounded-lg focus:outline-none focus:border-gray-900"
+                    class:border-red-600={error.address}
                     placeholder="Address"
                     bind:value={editor.address} />
                 <div class="flex justify-end space-x-2">

@@ -3,10 +3,16 @@
     import { writable } from "svelte/store";
     import md5 from "md5";
     import Cookies from "js-cookie";
+    import { onMount } from "svelte";
 
     const input: any = writable({
         username: "",
         password: "",
+    });
+
+    onMount(() => {
+        input.username = "";
+        input.password = "";
     });
 
     const error = {
@@ -15,8 +21,8 @@
     };
 
     function login() {
-        const username = (input.username || "").trim();
-        const password = input.password || "";
+        const username = input.username.trim();
+        const password = input.password;
 
         error.username = input.username === "";
         error.password = input.password === "";
@@ -35,7 +41,7 @@
         }).then(async (res) => {
             if (res.status == 200) {
                 Cookies.set("token", await res.text());
-                goto("/dashboard")
+                goto("/dashboard");
             }
         });
     }
@@ -50,12 +56,12 @@
         <div class="text-center text-xl font-bold">Login</div>
         <input
             class="bg-white border-2 block w-full py-2 px-4 rounded-lg focus:outline-none focus:border-gray-700"
-            class:border-red-500={error.username}
+            class:border-red-600={error.username}
             bind:value={input.username}
             placeholder="Username" />
         <input
             class="bg-white border-2 block w-full py-2 px-4 rounded-lg focus:outline-none focus:border-gray-700"
-            class:border-red-500={error.password}
+            class:border-red-600={error.password}
             type="password"
             bind:value={input.password}
             placeholder="Password" />

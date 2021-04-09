@@ -32,6 +32,12 @@
         price: "",
     });
 
+    const error = {
+        code: false,
+        name: false,
+        price: false
+    }
+
     function formatPrice(price: number): string {
         return ("" + price).replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1.");
     }
@@ -41,6 +47,8 @@
     }
 
     function clear() {
+        Object.keys(error).forEach((k) => (error[k] = false));
+
         editor.id = -1;
         editor.code = "";
         editor.name = "";
@@ -48,6 +56,8 @@
     }
 
     function set(item) {
+        Object.keys(error).forEach((k) => (error[k] = false));
+
         editor.id = item.id;
         editor.code = item.code;
         editor.name = item.name;
@@ -76,6 +86,14 @@
     }
 
     function submit() {
+        error.code = editor.code.trim() === "";
+        error.name = editor.name.trim() === "";
+        error.price = editor.price == 0;
+
+        if (Object.values(error).includes(true)) {
+            return;
+        }
+
         switch (editMode) {
             case EditMode.CREATE:
                 fetch("/item/create", {
@@ -259,19 +277,23 @@
                 <div class="text-xs pl-4 text-gray-800">Code</div>
                 <input
                     class="bg-white border-2 mb-2 block w-full py-2 px-4 rounded-lg focus:outline-none focus:border-gray-900"
+                    class:border-red-600={error.code}
                     placeholder="Code"
                     bind:value={editor.code} />
 
                 <div class="text-xs pl-4 text-gray-800">Name</div>
                 <input
                     class="bg-white border-2 mb-2 block w-full py-2 px-4 rounded-lg focus:outline-none focus:border-gray-900"
+                    class:border-red-600={error.name}
                     placeholder="Name"
                     bind:value={editor.name} />
 
                 <div class="text-xs pl-4 text-gray-800">Price</div>
                 <input
                     class="bg-white border-2 mb-2 block w-full py-2 px-4 rounded-lg focus:outline-none focus:border-gray-900"
+                    class:border-red-600={error.price}
                     type="number"
+                    min="0"
                     placeholder="Price"
                     bind:value={editor.price} />
                     
