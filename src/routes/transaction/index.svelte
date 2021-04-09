@@ -11,7 +11,7 @@
     import dateFormat from "dateformat";
 
     let transactions = [];
-    let filteredTransaction = [];
+    let filteredTransactions = [];
     let filter = "";
 
     onMount(() => {
@@ -19,26 +19,39 @@
             headers: { Authorization: Cookies.get("token") },
         }).then(async (res) => {
             transactions = await res.json();
-            filteredTransaction = transactions;
+            filteredTransactions = transactions;
         });
     });
 
     let showOverlay = false;
     let editMode = EditMode.CREATE;
 
+    let items = [];
+    let customers = [];
+
     const editor: any = writable({
         id: 0,
         itemId: 0,
         customerId: 0,
-        date: new Date(),
+        date: editorDate(Date.now()),
         qty: 0,
-        totalPrice: "",
-        discount: "",
-        priceAfterDiscount: "",
+        totalPrice: 0,
+        discount: 0,
+        priceAfterDiscount: 0,
     });
+
+    const error = {
+        item: false,
+        customer: false,
+        qty: false,
+    };
 
     function formatDate(date): string {
         return dateFormat(date, "dd-mm-yyyy HH:MM");
+    }
+
+    function editorDate(date): string {
+        return dateFormat(date, "yyyy-mm-dd'T'HH:MM");
     }
 
     function formatPrice(price: number): string {
@@ -46,27 +59,51 @@
     }
 
     function updateFilter() {
-        filteredTransaction = transactions.filter(
+        filteredTransactions = transactions.filter(
             (v) => filter === "" || v.name.toLowerCase().includes(filter.toLowerCase())
         );
     }
 
+    function fetchItemsCustomers() {
+        fetch("/item/all", {
+            headers: { Authorization: Cookies.get("token") },
+        }).then(async (res) => {
+            items = await res.json();
+        });
+
+        fetch("/customer/all", {
+            headers: { Authorization: Cookies.get("token") },
+        }).then(async (res) => {
+            customers = await res.json();
+        });
+    }
+
+    function onChange() {
+        const { itemId, qty, discount } = editor;
+        editor.totalPrice = items.find((v) => v.id == itemId).price * qty;
+        editor.priceAfterDiscount = editor.totalPrice - discount;
+    }
+
     function clear() {
+        Object.keys(error).forEach((k) => (error[k] = false));
+
         editor.id = -1;
-        editor.itemId = 0;
-        editor.customerId = 0;
-        editor.date = new Date();
+        editor.itemId = -1;
+        editor.customerId = -1;
+        editor.date = editorDate(Date.now());
         editor.qty = 0;
-        editor.totalPrice = "";
-        editor.discount = "";
-        editor.priceAfterDiscount = "";
+        editor.totalPrice = 0;
+        editor.discount = 0;
+        editor.priceAfterDiscount = 0;
     }
 
     function set(transaction) {
+        Object.keys(error).forEach((k) => (error[k] = false));
+
         editor.id = transaction.id;
         editor.itemId = transaction.itemId;
         editor.customerId = transaction.customerId;
-        editor.date = new Date(transaction.date);
+        editor.date = editorDate(transaction.date);
         editor.qty = transaction.qty;
         editor.totalPrice = transaction.totalPrice;
         editor.discount = transaction.discount;
@@ -74,6 +111,7 @@
     }
 
     function create() {
+        fetchItemsCustomers();
         clear();
 
         editMode = EditMode.CREATE;
@@ -81,6 +119,7 @@
     }
 
     function edit(transaction) {
+        fetchItemsCustomers();
         set(transaction);
 
         editMode = EditMode.EDIT;
@@ -95,6 +134,14 @@
     }
 
     function submit() {
+        error.item = editor.itemId == -1;
+        error.customer = editor.customerId == -1;
+        error.qty = editor.qty == 0;
+
+        if (Object.values(error).includes(true)) {
+            return;
+        }
+
         switch (editMode) {
             case EditMode.CREATE:
                 fetch("/transaction/create", {
@@ -107,6 +154,7 @@
                 }).then(async (res) => {
                     const transaction = await res.json();
                     transactions = [...transactions, transaction];
+                    updateFilter();
                 });
                 break;
             case EditMode.EDIT:
@@ -117,17 +165,25 @@
                         "Content-Type": "application/json",
                     },
                     body: JSON.stringify(editor),
-                }).then((res) => {
+                }).then(async (res) => {
+                    const edited = await res.json();
                     const transaction = transactions.find((v) => v.id == editor.id);
-                    transaction.code = editor.code;
-                    transaction.name = editor.name;
-                    transaction.address = editor.address;
+                    transaction.itemId = edited.itemId;
+                    transaction.itemName = edited.itemName;
+                    transaction.customerId = edited.customerId;
+                    transaction.customerName = edited.customerName;
+                    transaction.date = edited.date;
+                    transaction.qty = edited.qty;
+                    transaction.totalPrice = edited.totalPrice;
+                    transaction.discount = edited.discount;
+                    transaction.priceAfterDiscount = edited.priceAfterDiscount;
 
                     transactions = transactions;
+                    updateFilter();
                 });
                 break;
             case EditMode.DELETE:
-                fetch("/transactions/delete", {
+                fetch("/transaction/delete", {
                     method: "DELETE",
                     headers: {
                         Authorization: Cookies.get("token"),
@@ -136,6 +192,7 @@
                     body: JSON.stringify(editor),
                 }).then((res) => {
                     transactions = transactions.filter((v) => v.id != editor.id);
+                    updateFilter();
                 });
                 break;
         }
@@ -148,7 +205,7 @@
     }
 </script>
 
-<Base pageName="Transaction">
+<Base pageName="Transactions">
     <div class="flex flex-col w-full">
         <!-- sticky header -->
         <div class="sticky top-0 pt-3 px-3 border-b-2 bg-gray-800 border-gray-900 text-gray-200">
@@ -187,13 +244,13 @@
         <!-- table -->
         <table class="table-fixed mx-3 mt-3 border-collapse">
             <tbody>
-                {#each filteredTransaction as transaction, index}
+                {#each filteredTransactions as transaction, index}
                     <tr class="bg-gray-{index % 2 ? 400 : 300}">
                         <td class="p-2 w-40 border-r-2 border-gray-200 text-center font-mono"
                             >{formatDate(new Date(transaction.date))}</td>
                         <td class="p-2 w-64 border-r-2 border-gray-200">{transaction.itemName}</td>
                         <td class="p-2 w-auto border-r-2 border-gray-200">{transaction.customerName}</td>
-                        <td class="p-2 w-20 border-r-2 border-gray-200">{transaction.qty}</td>
+                        <td class="p-2 w-20 border-r-2 border-gray-200 text-center">{transaction.qty}</td>
                         <td class="p-2 w-64 border-r-2 border-gray-200 text-right">
                             <div class="flex">
                                 Rp
@@ -217,7 +274,7 @@
                 {/each}
 
                 <!-- footer -->
-                <tr class="bg-gray-{filteredTransaction.length % 2 ? 400 : 300}">
+                <tr class="bg-gray-{filteredTransactions.length % 2 ? 400 : 300}">
                     <td class="p-2 w-40 border-r-2 border-gray-200 text-center font-mono">
                         <div class="flex">
                             <button
@@ -290,21 +347,64 @@
                 </div>
             {:else}
                 <!-- create/edit form -->
-                <div class="text-xs pl-4 text-gray-800">Code</div>
+                <div class="text-xs pl-4 text-gray-800">Date/Time</div>
                 <input
+                    type="datetime-local"
                     class="bg-white border-2 mb-2 block w-full py-2 px-4 rounded-lg focus:outline-none focus:border-gray-900"
-                    placeholder="Code"
-                    bind:value={editor.code} />
-                <div class="text-xs pl-4 text-gray-800">Name</div>
-                <input
+                    bind:value={editor.date} />
+
+                <div class="text-xs pl-4 text-gray-800">Item</div>
+                <select
                     class="bg-white border-2 mb-2 block w-full py-2 px-4 rounded-lg focus:outline-none focus:border-gray-900"
-                    placeholder="Name"
-                    bind:value={editor.name} />
-                <div class="text-xs pl-4 text-gray-800">Address</div>
-                <input
+                    class:border-red-600={error.item}
+                    bind:value={editor.itemId}
+                    on:input={onChange}>
+                    <option disabled selected value={-1}>--Select an item--</option>
+                    {#each items as item}
+                        <option value={item.id}>{item.name}</option>
+                    {/each}
+                </select>
+
+                <div class="text-xs pl-4 text-gray-800">Customer</div>
+                <select
                     class="bg-white border-2 mb-2 block w-full py-2 px-4 rounded-lg focus:outline-none focus:border-gray-900"
-                    placeholder="Address"
-                    bind:value={editor.address} />
+                    class:border-red-600={error.customer}
+                    bind:value={editor.customerId}>
+                    <option disabled selected value={-1}>--Select a Customer--</option>
+                    {#each customers as customer}
+                        <option value={customer.id}>{customer.name}</option>
+                    {/each}
+                </select>
+
+                <div class="flex space-x-2">
+                    <div class="flex-grow">
+                        <div class="text-xs pl-4 text-gray-800">Qty</div>
+                        <input
+                            type="number"
+                            min="0"
+                            class="bg-white border-2 w-20 mb-2 block py-2 px-4 rounded-lg focus:outline-none focus:border-gray-900"
+                            placeholder="Qty"
+                            class:border-red-600={error.qty}
+                            on:change={onChange}
+                            bind:value={editor.qty} />
+                    </div>
+                    <div class="flex-grow">
+                        <div class="text-xs pl-4 text-gray-800">Discount</div>
+                        <input
+                            type="number"
+                            min="0"
+                            class="bg-white border-2 w-full mb-2 block py-2 px-4 rounded-lg focus:outline-none focus:border-gray-900"
+                            placeholder="Discount"
+                            on:change={onChange}
+                            bind:value={editor.discount} />
+                    </div>
+                </div>
+
+                <div class="flex space-x-2 text-right mb-2">
+                    Rp
+                    <div class="flex-grow font-mono text-3xl">{formatPrice(editor.priceAfterDiscount)}</div>
+                </div>
+
                 <div class="flex justify-end space-x-2">
                     <button
                         class="bg-green-500 w-20 ml-2 hover:bg-green-600 float-right rounded-lg text-gray-50 py-2 px-4 font-bold focus:outline-none"

@@ -8,10 +8,9 @@ export async function post(req: Request, res: Response) {
         const body = req.body;
 
         const transaction = await Transaction.create({
-            id: body.id,
             itemId: body.itemId,
             customerId: body.customerId,
-            date: body.date,
+            date: new Date(body.date),
             qty: body.qty,
             totalPrice: body.totalPrice,
             discount: body.discount,

@@ -261,16 +261,20 @@
                     class="bg-white border-2 mb-2 block w-full py-2 px-4 rounded-lg focus:outline-none focus:border-gray-900"
                     placeholder="Code"
                     bind:value={editor.code} />
+
                 <div class="text-xs pl-4 text-gray-800">Name</div>
                 <input
                     class="bg-white border-2 mb-2 block w-full py-2 px-4 rounded-lg focus:outline-none focus:border-gray-900"
                     placeholder="Name"
                     bind:value={editor.name} />
+
                 <div class="text-xs pl-4 text-gray-800">Price</div>
                 <input
                     class="bg-white border-2 mb-2 block w-full py-2 px-4 rounded-lg focus:outline-none focus:border-gray-900"
+                    type="number"
                     placeholder="Price"
                     bind:value={editor.price} />
+                    
                 <div class="flex justify-end space-x-2">
                     <button
                         class="bg-green-500 w-20 ml-2 hover:bg-green-600 float-right rounded-lg text-gray-50 py-2 px-4 font-bold focus:outline-none"
