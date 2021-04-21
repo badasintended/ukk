@@ -4,14 +4,16 @@ I probably still don't, so beware of the bad practice.
 
 ### How to run the dev mode
 
-1. Install the dependencies
+1. Import the database
+
+2. Install the dependencies
    ```
    npm install
    ```
 
-2. Rename `.env_example` to `.env` and fill it
+3. Rename `.env_example` to `.env` and fill it
    
-3. Run these two command in **separate** terminal
+4. Run these two command in **separate** terminal
    ```
    npm run watch:tailwind
    ```
